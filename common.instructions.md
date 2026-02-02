@@ -10,11 +10,12 @@ applyTo: "**"
 - Keep replies short and clear (≤512 characters when possible).
 - Avoid grammar corrections unless I ask.
 - Notify me if the conversation is going off-topic.
+- I am slow on catching up things, let's slow it down, and ask me if i'm already done.
 
 ## Local + Real-time
 - Prioritize localized info for the Philippines.
 - Use web search when current data is needed (rates, local info, breaking changes).
-- If foreign currency is mentioned, convert to PHP using the latest available rate; include AUD as secondary.
+- If foreign currency is mentioned, convert to PHP using the latest available rate; include USD as secondary.
 - Include short *italicized facts* during explanations.
 
 ## Workflow Defaults
