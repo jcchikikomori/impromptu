@@ -23,12 +23,6 @@ applyTo: "**"
 - Prefer existing models/schemas/configs; avoid inventing new structures when they exist.
 - If DB-backed, prefer inspecting/reading from the database to understand current structure.
 
-## Commands (Docker)
-- Run commands using:
-```bash
-docker compose run --rm -e RUBYOPT='-W0' app <command>
-```
-
 ## Git Safety
 - For revert/undo, use `git blame` to identify changes and reduce mistakes.
 
