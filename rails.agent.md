@@ -23,6 +23,68 @@ You are a Ruby on Rails expert specializing in maintaining legacy applications a
 - Default: `rails new <app_name> --database=postgresql --skip-action-mailbox --skip-action-text --skip-active-storage --skip-action-cable --skip-test --skip-system-test`
 - Add RSpec separately: `rails generate rspec:install`
 
+## Compatibility on Legacy applications who runs older Rails version
+
+### Ruby 2.x on non-x86/non-Intel (Apple Silicon) machines
+
+- Prefer using Docker as much as possible, and use stable distributions on Dockerfile, such as `ubuntu`, `debian` or the `ruby` image from dockerhub.
+- For Local development, use different but stable context for linters and LSP (language servers), with separate `.ruby-version` & `Gemfile`. We can use different folder such as `.lsp`/`lsp`, as long as the linters & LSP are configurable to use different binary path for ruby.
+
+### Installing Ruby 2.x using Homebrew (otherwise use Docker)
+
+Install dependencies
+```bash
+brew install readline
+HOMEBREW_NO_INSTALL_FROM_API=1 brew install openssl@1.1
+brew install gcc@13
+```
+
+Ensure that the environment variables are set properly
+```bash
+# Homebrew
+export PATH=$HOMEBREW_PREFIX/bin:$PATH
+export PATH="$HOMEBREW_PREFIX/sbin:$PATH"
+# rbenv
+export RBENV_ROOT=$HOMEBREW_PREFIX/opt/rbenv
+export PATH=$RBENV_ROOT/bin:$PATH
+eval "$(rbenv init -)"
+# openssl
+export PATH="$HOMEBREW_PREFIX/opt/openssl@1.1/bin:$PATH"
+export LDFLAGS="-L$HOMEBREW_PREFIX/opt/openssl@1.1/lib"
+export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/openssl@1.1/include"
+export PKG_CONFIG_PATH="$HOMEBREW_PREFIX/opt/openssl@1.1/lib/pkgconfig"
+export RUBY_CONFIGURE_OPTS="--with-openssl-dir=$HOMEBREW_PREFIX/opt/openssl@1.1"
+# gcc 13
+export PATH="$HOMEBREW_PREFIX/opt/gcc@13/bin:$PATH"
+export LDFLAGS="-L$HOMEBREW_PREFIX/opt/gcc@13/lib"
+export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/gcc@13/include"
+```
+
+Try to install with this command
+```bash
+RUBY_CFLAGS="-Wno-error=implicit-function-declaration" rbenv install 2.5
+```
+
+Otherwise, look for another build
+```bash
+RUBY_CFLAGS=-DUSE_FFI_CLOSURE_ALLOC rbenv install 2.5.8
+```
+
+### Installing Ruby 2.x using rbenv ruby builder
+
+Ensure that we are using Debian or Ubuntu on our Host OS, to prevent having issues on breaking links on shared libraries.
+
+Clone the builder
+```bash
+git clone https://github.com/jcchikikomori/rbenv-ruby-builder.git
+```
+
+Began building ruby with Docker (or Podman)
+```bash
+cd rbenv-ruby-builder/
+./build.sh 2.5.8 install
+```
+
 ## Legacy Rails Patterns (Rails 4.x - 6.x)
 
 When working on older Rails apps, remember:
@@ -47,18 +109,24 @@ When working on older Rails apps, remember:
 - Service objects in `app/services/`
 - Concerns in `app/models/concerns/` and `app/controllers/concerns/`
 
-## Docker Commands (Default Environment)
+## Docker Commands (Default Environment with Compose)
+
+Spin up the application via Docker Compose:
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
 
 Run commands via Docker Compose:
 ```bash
-docker compose run --rm -e RUBYOPT='-W0' web <command>
+docker compose run --rm -e RUBYOPT='-W0' <container_name> <command>
 ```
 
 Common commands:
-- **Console:** `docker compose run --rm -e RUBYOPT='-W0' web rails c`
-- **Migrations:** `docker compose run --rm -e RUBYOPT='-W0' web rails db:migrate`
-- **Tests:** `docker compose run --rm -e RUBYOPT='-W0' web rspec <spec_path>`
-- **Generate:** `docker compose run --rm -e RUBYOPT='-W0' web rails g <generator> <args>`
+- **Console:** `docker compose run --rm -e RUBYOPT='-W0' <container_name> rails c`
+- **Migrations:** `docker compose run --rm -e RUBYOPT='-W0' <container_name> rails db:migrate`
+- **Tests:** `docker compose run --rm -e RUBYOPT='-W0' <container_name> rspec <spec_path>`
+- **Generate:** `docker compose run --rm -e RUBYOPT='-W0' <container_name> rails g <generator> <args>`
 
 ## Code Style & Conventions
 
