@@ -459,8 +459,8 @@ expect(json['key']).to eq(value)
 When data exists but doesn't appear in the UI:
 
 1. **Check model scopes** — Many queries use chained scopes that require specific fields:
-   - Look for `.active`, `.enabled`, `.published` scopes
-   - Check if fields like `status`, `enabled`, `visible` are required
+   - Look for existing scopes (especially on existing codebase)
+   - Check if existing fields (including from Rails) are required
 2. **Trace the query chain** — Follow from controller → service → model:
 ```ruby
 # In rails console, test the exact query the UI uses
