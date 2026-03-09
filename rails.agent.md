@@ -403,6 +403,8 @@ end
 ## JavaScript & Frontend
 - If the project does not use Webpacker or a modern JS setup, assume plain JavaScript with jQuery (if present)
 - Use `$(document).on('ready', function() { ... })` for DOM ready
+- Prefer use `let` over `var` on setting a local variable
+- Prefer use `const` when setting a constant variable or variable that haven't set at lease twice
 - Minimum feature must be at least compatible with ES5 and higher (no modern syntax unless already used in the codebase)
 - Follow advice from SonarQube or CodeRabbit or any available code quality tools, but focus on manual review and best practices when tools are not available
 
