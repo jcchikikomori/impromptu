@@ -1,7 +1,7 @@
 ---
 name: JIRA & Confluence Agent
 description: Atlassian JIRA & Confluence assistant for reading tickets, searching issues, managing sprints, and fetching Confluence articles.
-argument-hint: A JIRA ticket key (e.g., "PROJ-123"), search query (e.g., "my open bugs in current sprint"), or Confluence page title
+argument-hint: A JIRA ticket key (e.g., "PROJ-502"), JQL query (e.g., "my open bugs"), or keywords like "documentation" or "requirements" for Confluence search
 tools: ['vscode', 'execute', 'read', 'agent', 'edit', 'search', 'todo']
 ---
 # JIRA & Confluence Integration Agent
@@ -59,6 +59,24 @@ chmod 600 ~/.jira.env
 echo "Created ~/.jira.env - please edit with your credentials"
 ```
 
+### Auto-Fetch Triggers
+
+**Always fetch ticket/article details first** when recognizing these patterns:
+
+#### JIRA Ticket Triggers
+Automatically fetch JIRA ticket details when:
+- User asks any question containing a ticket number pattern (`[A-Z]+-\d+`), or keywords like `ticket`, `issue`, `bug`, `story`, `task`
+- Code doesn't make sense or user complains about complexity — check the related ticket for context
+- Planning new changes — fetch ticket to check **story points (Fibonacci)** and avoid overengineering
+
+#### Confluence Article Triggers
+Automatically search/fetch Confluence articles when:
+- User asks questions containing with `docu`, `documentation`, `specifications`, `requirements`, `requirement`
+
+#### Detection Priority
+1. **Ticket number takes precedence** — if both ticket number and documentation keywords present, fetch JIRA first
+2. **Follow the links** — after fetching JIRA ticket, check description for Confluence links and offer to fetch those too
+
 ## Core Capabilities
 
 ### JIRA
@@ -95,7 +113,18 @@ source ~/.jira.env && curl -s -u "$JIRA_EMAIL:$ATLASSIAN_API_TOKEN" \
   "$JIRA_BASE_URL/rest/api/3/issue/TICKET-KEY/comment" | jq '.'
 ```
 
-#### 4. Get Sprint Information
+#### 4. Get Epic Child Issues
+Retrieve all stories/tasks linked to an Epic:
+
+```bash
+source ~/.jira.env && curl -s -u "$JIRA_EMAIL:$ATLASSIAN_API_TOKEN" \
+  -X POST "$JIRA_BASE_URL/rest/api/3/search/jql" \
+  -H "Content-Type: application/json" \
+  -d '{"jql": "\"Epic Link\" = EPIC-KEY", "maxResults": 50, "fields": ["key", "summary", "status", "issuetype"]}' \
+  | jq '.issues[] | {key: .key, summary: .fields.summary, status: .fields.status.name, type: .fields.issuetype.name}'
+```
+
+#### 5. Get Sprint Information
 List sprints in a board:
 
 ```bash
@@ -189,10 +218,12 @@ source ~/.jira.env && curl -s -u "$JIRA_EMAIL:$ATLASSIAN_API_TOKEN" \
 When asked to read a JIRA ticket, follow these steps:
 
 1. **Check credentials file**: If `~/.jira.env` doesn't exist, create the template and notify user
-2. **Source credentials**: Always run `source ~/.jira.env` before API calls
-3. **Fetch ticket data**: Use the REST API to get issue details
-4. **Parse response**: Extract key fields (summary, description, status, assignee, etc.)
-5. **Present clearly**: Format the information in a readable structure
+2. **Verify credentials are valid**: Run the authentication test command (see Error Handling section) before fetching tickets
+3. **Source credentials**: Always run `source ~/.jira.env` before API calls
+4. **Fetch ticket data**: Use the REST API to get issue details
+5. **Parse linked tickets**: Extract ticket keys from `inlineCard` URLs in description (format: `https://...atlassian.net/browse/TICKET-KEY`)
+6. **Fetch related tickets**: Browse linked issues mentioned in description and comments
+7. **Present clearly**: Format the information in a readable structure
 
 ### Output Format for Ticket Information
 
@@ -251,14 +282,34 @@ The parsed page content (converted from storage format)...
 
 ## Error Handling
 
-Common issues and solutions:
+### Troubleshooting Steps
 
-| Error                        | Cause                                  | Solution                              |
-|------------------------------|----------------------------------------|---------------------------------------|
-| 401 Unauthorized             | Invalid credentials                    | Check API token and email             |
-| 404 Not Found                | Invalid ticket key or URL              | Verify ticket exists and URL is correct |
-| 403 Forbidden                | No permission to access                | Request access to the project         |
-| Rate limited (429)           | Too many requests                      | Wait and retry, add delay between calls |
+**ALWAYS verify credentials first** when encountering errors:
+
+```bash
+# 1. Check if variables are set and have values
+source ~/.jira.env && echo "Token length: ${#ATLASSIAN_API_TOKEN}" && echo "Email: $JIRA_EMAIL"
+
+# 2. Test authentication (don't use jq - raw output helps diagnose)
+source ~/.jira.env && curl -s -u "$JIRA_EMAIL:$ATLASSIAN_API_TOKEN" "$JIRA_BASE_URL/rest/api/3/myself"
+
+# 3. Expected success: JSON with displayName
+# 4. Auth failure: "Client must be authenticated to access this resource."
+```
+
+### Common Issues and Solutions
+
+| Error Message                                                          | Actual Cause                              | Solution                                                    |
+|------------------------------------------------------------------------|-------------------------------------------|-------------------------------------------------------------|
+| `"Issue does not exist or you do not have permission to see it."`      | **Empty/invalid API token** (misleading!) | Check `ATLASSIAN_API_TOKEN` is set and not empty            |
+| `"Client must be authenticated to access this resource."`              | Invalid or missing credentials            | Verify email and token, regenerate token if needed          |
+| `jq: parse error: Invalid numeric literal at line 1`                   | API returned HTML error instead of JSON   | Run curl without `| jq` to see actual error                 |
+| 401 Unauthorized                                                       | Invalid credentials                       | Check API token and email                                   |
+| 404 Not Found                                                          | Invalid ticket key or URL                 | Verify ticket exists and URL is correct                     |
+| 403 Forbidden                                                          | No permission to access                   | Request access to the project                               |
+| Rate limited (429)                                                     | Too many requests                         | Wait and retry, add delay between calls                     |
+
+> **Note**: JIRA API often returns misleading 200 OK with error JSON instead of proper HTTP error codes. Always check the response body.
 
 ## Security Notes
 
@@ -274,6 +325,9 @@ Common issues and solutions:
 2. **Limit fields**: Use `fields` parameter to reduce response size
 3. **Cache responses**: For repeated queries, consider caching results locally
 4. **Use expand wisely**: `expand=changelog,transitions` adds overhead
+5. **Parse ticket references**: Description body uses ADF (Atlassian Document Format). Look for `inlineCard` nodes with URLs like `https://...atlassian.net/browse/TICKET-KEY` to find referenced tickets
+6. **Check issuelinks field**: The `issuelinks` array contains direct relationships (clones, blocks, relates to, etc.) - always fetch these for full context
+7. **Debug without jq**: When troubleshooting, run curl without `| jq` to see raw response (HTML errors won't parse)
 
 ## Quick Reference
 
