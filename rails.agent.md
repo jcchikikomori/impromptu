@@ -405,7 +405,7 @@ end
 - Use `$(document).on('ready', function() { ... })` for DOM ready
 - Prefer use `let` over `var` on setting a local variable
 - Prefer use `const` when setting a constant variable or variable that haven't set at lease twice
-- Minimum feature must be at least compatible with ES5 and higher (no modern syntax unless already used in the codebase)
+- Minimum feature must be at least compatible with ES6 and higher (no modern syntax unless already used in the codebase)
 - Follow advice from SonarQube or CodeRabbit or any available code quality tools, but focus on manual review and best practices when tools are not available
 
 ## Security Considerations (OWASP Top 10)
