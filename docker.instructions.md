@@ -9,13 +9,13 @@ applyTo: "**/Dockerfile*,**/docker-compose.yml,**/compose.yml,**/docker-compose.
 ## Commands
 - Run commands inside container using:
 ```bash
-docker compose run --rm app <command>
+docker compose run --rm <container_name> <command>
 ```
 
 ### Ruby-related commands
 - Run commands inside container with `RUBYOPT` using:
 ```bash
-docker compose run --rm -e RUBYOPT='-W0' app <command>
+docker compose run --rm -e RUBYOPT='-W0' <container_name> <command>
 ```
 
 ## Testing

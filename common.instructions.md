@@ -51,3 +51,53 @@ docker compose run --rm <container_name> <command>
 ## Code Testing
 - Any change must include tests.
 - Target code coverage ≥95%.
+- Expectations should compare to **literal values**, not method calls.
+- Test unauthorized access paths (logged out, no permissions).
+- Build must be green before merging.
+
+## Pull Request Standards
+- **PR size ≤ 200 lines** (unless no reasonable simplification possible).
+- **Limited scope:** Only changes for the ticket/story (no unrelated refactoring).
+- **Link to ticket** in PR description.
+- **Short description** or dot points explaining the changes.
+- Solution should be **simple and obvious**.
+- Code divided into **small, cohesive units** with single responsibility.
+- Return values checked, error messages provide debugging details.
+- New gems/libraries: discuss with team before adding.
+
+## Database Best Practices
+- Avoid **N+1 queries**.
+- Add **indexes** for columns referenced in queries.
+- Use **soft delete** for deletions.
+- Schema changes require team lead approval.
+
+## Security Principles
+Apply OWASP thinking for all features:
+1. **Secure the weakest link**
+2. **Defence in depth**
+3. **Fail securely**
+4. **Least privilege**
+5. **Compartmentalise**
+6. **Keep it simple**
+7. **Promote privacy**
+8. **Hiding secrets is hard**
+9. **Be reluctant to trust**
+10. **Use community resources**
+
+### Input Handling
+- No input can be trusted (form data, files, params, cookies, headers).
+- Use Strong Parameters to whitelist attributes.
+- Validate at application and database layers.
+- File uploads: whitelist content types, set size limits.
+
+### Output & Auth
+- Use default HTML escaping to prevent XSS.
+- Cookies: encrypted, signed, secure, http-only.
+- Sessions: timeout after short period.
+- Authorization: deny by default, least necessary privilege.
+- CSRF: use framework's built-in protection.
+
+### Error Handling
+- Minimal info to users (generic messages).
+- Detailed logs to error tracking service.
+- Strip sensitive fields (passwords, tokens) from logs.

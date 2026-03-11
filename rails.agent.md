@@ -408,7 +408,85 @@ end
 - Minimum feature must be at least compatible with ES6 and higher (no modern syntax unless already used in the codebase)
 - Follow advice from SonarQube or CodeRabbit or any available code quality tools, but focus on manual review and best practices when tools are not available
 
+## Git Workflow & Pull Requests
+
+### Branch Naming
+- Ask user to provide a branch name, and avoid using `main` or `master` and `develop` for development branches
+- Main development branch is typically `develop` (not main/master)
+
+### Pull Request Requirements
+
+**Every line of code must be approved by another team member. No exceptions.**
+
+| Requirement | Description |
+|-------------|-------------|
+| **Link to ticket** | PR description must contain link to related ticket |
+| **Short description** | Dot points explaining the changes |
+| **PR size ≤ 200 lines** | Unless no reasonable simplification possible |
+| **Limited scope** | Only changes for what's described in the ticket |
+| **Simple and obvious** | Solution should be straightforward |
+| **Single responsibility** | Small, cohesive units (modules/classes/concerns) |
+
+### Reviewer Selection
+- **Architectural changes:** Request senior developer and/or team lead
+- **Day-to-day bug fixes:** Any team member
+- **Schema changes or patches:** Must be approved by team lead
+
+### New Gems or JS Libraries
+Discuss with team before adding. Post in project chat for visibility on dependency changes.
+
+---
+
+## Code Review Checklist
+
+### General
+
+| Check | Requirement |
+|-------|-------------|
+| ☐ | PR description contains link to related ticket |
+| ☐ | PR description contains short comments/dot points describing changes |
+| ☐ | Requirements of the story are understood |
+| ☐ | Changes are limited to only what's described in the story |
+| ☐ | Class, method, and variable names are easy to understand |
+| ☐ | PR length is ≤ 200 lines (or no reasonable simplification possible) |
+| ☐ | Solution is reasonably simple and obvious |
+| ☐ | Solution is divided into small, cohesive units with single responsibility |
+| ☐ | Return values are checked, error messages provide debugging details |
+| ☐ | Confident I could maintain this code |
+
+### Database
+
+| Check | Requirement |
+|-------|-------------|
+| ☐ | All schema changes and patches approved by **team lead** |
+| ☐ | No **N+1 queries** |
+| ☐ | All columns referenced in queries have **indexes** |
+| ☐ | Deletions use **soft delete** |
+
+### File Handling
+
+| Check | Requirement |
+|-------|-------------|
+| ☐ | All file storage uses cloud storage (S3 or equivalent) |
+
+### Specs
+
+| Check | Requirement |
+|-------|-------------|
+| ☐ | All new behaviour has **specs** |
+| ☐ | Expectations compared to **literal values** (not method calls) |
+| ☐ | For code without specs, verification process is documented |
+| ☐ | Build is **green** |
+| ☐ | PR increases or maintains code quality score |
+
+### When Done Reviewing
+Signal completion clearly: *"That's all I've got."*
+
+---
+
 ## Security Considerations (OWASP Top 10)
+
+> Detailed security guidelines are in `ruby.instructions.md`. This is a quick reference.
 
 - Use parameterized queries (never string interpolation in SQL)
 - Validate and sanitize all user input
@@ -416,6 +494,13 @@ end
 - Escape output in views (`html_safe` only when absolutely necessary)
 - Use `SecureRandom` for tokens
 - Never log sensitive data (passwords, tokens, PII)
+
+### Error Handling Principles
+- **Minimal info to users** — generic error messages
+- **Detailed logs** — send to error tracking service (Rollbar, Sentry, etc.)
+- **Strip sensitive fields** (passwords, tokens) before logging
+
+---
 
 ## Debugging Workflow
 
@@ -500,9 +585,7 @@ docker compose run --rm -e RUBYOPT='-W0' <container_name> \
    - **String concatenation:** Convert `'text: ' + (x ? 'a' : 'b')` → `"text: #{x ? 'a' : 'b'}"`
 4. **Always verify script still works after fixes**
 
-## Code Quality Verification (GitHub Copilot)
-
-When GitHub Copilot tools are available, use them to verify code quality:
+## Code Quality Verification
 
 ### Pre-commit Checks
 Before finalizing changes, review for:
@@ -510,19 +593,42 @@ Before finalizing changes, review for:
 - **Security issues:** SQL injection, XSS, mass assignment vulnerabilities
 - **Performance:** N+1 queries, unnecessary DB calls, memory leaks
 - **Rails best practices:** Proper use of callbacks, concerns, service objects
+- **Feature Envy:** Methods should use their own object's data, not excessively reach into other objects
 
-### Review Checklist
-After implementation, self-review:
+### Common Code Smells to Watch
+
+| Smell | Detection | Fix |
+|-------|-----------|-----|
+| Long Method | >20 lines | Extract to smaller methods |
+| Feature Envy | Method uses other object's data excessively | Move method to that object |
+| Primitive Obsession | Using primitives instead of small objects | Create value objects |
+| Switch Statements | Multiple `case`/`if-elsif` chains | Use polymorphism or strategy pattern |
+| Data Clumps | Same params passed together repeatedly | Extract to parameter object |
+| Missing `else` | `case` without default handler | Always add `else` with explicit error |
+
+### Self-Review Checklist
+After implementation:
 1. Does it follow existing patterns in the codebase?
 2. Are there sufficient tests with good coverage?
 3. Is the code readable and maintainable?
 4. Are edge cases handled?
 5. Is error handling appropriate?
+6. Do `case` statements have `else` clauses?
 
-### Integration Notes
-- SonarQube and CodeRabbit handle automated analysis separately (not this agent's concern)
-- Focus on Copilot-assisted reviews for immediate feedback during development
-- Use Copilot to suggest improvements before pushing code
+### SAST (Static Application Security Testing)
+Automated tools (Code Climate, SonarQube, etc.) check PRs for:
+- Cross-site scripting (XSS) and CSRF
+- SQL Injection
+- File Access vulnerabilities
+- Remote Code Execution
+- Authentication issues
+- Insecure Application Routing
+
+**Any code that introduces security flaws will not be approved for merge.**
+
+### Code Coverage Requirements
+- **Target:** ≥95% code coverage
+- **All branches covered:** Include tests for `else` clauses, error paths, edge cases
 
 ## Task Execution
 
