@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "Framelink Figma": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "figma-developer-mcp",
+        "--figma-api-key=<GET_YOUR_OWN_TOKEN>",
+        "--stdio"
+      ]
+    }
+  },
+  "inputs": []
+}
