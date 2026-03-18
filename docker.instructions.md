@@ -1,22 +1,15 @@
 ---
-applyTo: "**/Dockerfile*,**/docker-compose.yml,**/compose.yml,**/docker-compose.yaml,**/compose.yaml,**/Makefile,**/.dockerignore,**/*.yaml,**/*.yml"
+applyTo: "**/Dockerfile*,**/docker-compose.yml,**/compose.yml,**/docker-compose.yaml,**/compose.yaml,**/Makefile,**/.dockerignore"
 ---
-# Dev with Container Setup Instructions (Workspace)
 
-## Workflow Defaults
-- Assume Docker is used as the dev environment.
+# Container Setup Instructions
 
-## Commands
-- Run commands inside container using:
-```bash
-docker compose run --rm <container_name> <command>
-```
+<!-- Docker commands inherited from common.instructions.md -->
 
-### Ruby-related commands
-- Run commands inside container with `RUBYOPT` using:
-```bash
-docker compose run --rm -e RUBYOPT='-W0' <container_name> <command>
-```
+## Dockerfile Best Practices
 
-## Testing
-- Assume Docker is used for running tests.
+- Use multi-stage builds to reduce image size
+- Pin base image versions (e.g., `ruby:3.2.2-slim` not `ruby:latest`)
+- Order layers by change frequency (least → most)
+- Combine RUN commands with `&&` to reduce layers
+- Use `.dockerignore` to exclude unnecessary files
